@@ -1,0 +1,21 @@
+# ?????
+server:
+  port: 8080
+
+# Spring ??
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # ?????????????
+    url: jdbc:mysql://localhost:3306/login_db?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    # ??????
+    username: root
+    # ?????
+    password: 123456
+
+# MyBatis ??
+mybatis:
+  type-aliases-package: com.login.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
