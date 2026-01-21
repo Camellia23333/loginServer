@@ -2,7 +2,7 @@ package com.example.logintest.service;
 
 import com.example.logintest.dao.UserMapper;
 import com.example.logintest.entity.User;
-import com.example.logintest.manager.UserSessionManager;
+import com.example.logintest.manager.DatabaseSessionManager;
 import com.example.logintest.utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,7 @@ public class UserService {
     private UserMapper userMapper;
 
     @Autowired
-    private UserSessionManager userSessionManager;
+    private DatabaseSessionManager sessionManager;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -51,29 +51,29 @@ public class UserService {
     /**
      * 生成唯一登录Token
      */
-    public String generateUniqueToken(User user, String oldToken) {
-        return userSessionManager.handleUserLogin((long) user.getId(), user.getPhone(), oldToken);
+    public String generateUniqueToken(User user, String deviceInfo) {
+        return sessionManager.handleUserLogin((long) user.getId(), user.getPhone(), deviceInfo);
     }
 
     /**
      * 验证Token是否有效
      */
     public boolean validateToken(Long userId, String token) {
-        return userSessionManager.isValidAndCurrentToken(userId, token);
+        return sessionManager.isValidAndCurrentToken(userId, token);
     }
 
     /**
      * 刷新Token
      */
     public void refreshToken(Long userId, String token) {
-        userSessionManager.refreshToken(userId, token);
+        sessionManager.refreshToken(userId, token);
     }
 
     /**
      * 用户登出
      */
     public void logout(Long userId, String token) {
-        userSessionManager.logout(userId, token);
+        sessionManager.logout(userId, token);
     }
 
     /**

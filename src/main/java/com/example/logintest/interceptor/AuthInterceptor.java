@@ -36,7 +36,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        token = token.substring(7); // 移除"Bearer "前缀
+        token = token.substring(7);
 
         try {
             // 从Token中提取用户ID
@@ -58,14 +58,11 @@ public class AuthInterceptor implements HandlerInterceptor {
     }
 
     private void sendErrorResponse(HttpServletResponse response, Result<?> result) throws Exception {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setStatus(401);
         response.setContentType("application/json;charset=UTF-8");
         PrintWriter out = response.getWriter();
-        try {
-            out.write(new ObjectMapper().writeValueAsString(result));
-            out.flush();
-        } finally {
-            out.close(); // 确保资源释放
-        }
+        out.write(new ObjectMapper().writeValueAsString(result));
+        out.flush();
+        out.close();
     }
 }

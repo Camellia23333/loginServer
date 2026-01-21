@@ -4,6 +4,7 @@ import com.example.logintest.entity.LoginRequest;
 import com.example.logintest.entity.Result;
 import com.example.logintest.entity.User;
 import com.example.logintest.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,12 +26,13 @@ public class LoginController {
      * POST /api/login
      */
     @PostMapping("/login")
-    public Result<Map<String, Object>> login(@RequestBody LoginRequest request) {
+    public Result<Map<String, Object>> login(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         System.out.println("========== 收到登录请求 ==========");
         System.out.println("手机号: " + request.getPhone());
 
         String phone = request.getPhone();
         String password = request.getPassword();
+        String deviceInfo = getDeviceInfo(httpRequest); // 获取设备信息
 
         // 参数校验
         if (phone == null || phone.trim().isEmpty()) {
@@ -45,7 +47,7 @@ public class LoginController {
 
         if (user != null) {
             // 登录成功，生成唯一Token
-            String token = userService.generateUniqueToken(user, null);
+            String token = userService.generateUniqueToken(user, deviceInfo);
 
             // 准备返回数据
             Map<String, Object> data = new HashMap<>();
@@ -93,5 +95,13 @@ public class LoginController {
     @GetMapping("/test")
     public Result<String> test() {
         return Result.success("服务正常运行!", "Hello World");
+    }
+
+    /**
+     * 获取设备信息
+     */
+    private String getDeviceInfo(HttpServletRequest request) {
+        String userAgent = request.getHeader("User-Agent");
+        return userAgent != null ? userAgent.substring(0, Math.min(userAgent.length(), 200)) : "Unknown";
     }
 }
