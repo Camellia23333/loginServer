@@ -1,21 +1,38 @@
-# ?????
 server:
   port: 8080
 
-# Spring ??
+# Spring 配置
 spring:
+  # 数据源配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    # ?????????????
     url: jdbc:mysql://localhost:3306/login_db?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
-    # ??????
     username: root
-    # ?????
     password: 123456
 
-# MyBatis ??
+    # Redis配置
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+
+# MyBatis配置
 mybatis:
   type-aliases-package: com.login.entity
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# JWT配置
+jwt:
+  # 用于签名的密钥至少64字节，用于HS512算法
+  secret: MyVeryLongAndSecureSecretKeyForJwtTokenGenerationThatIsAtLeast64BytesLong123456
+  # token过期时间(毫秒)，2小时 = 7200000
+  expire-time: 7200000

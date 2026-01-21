@@ -9,14 +9,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 登录控制器
  */
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "*")
 public class LoginController {
 
     @Autowired
@@ -46,11 +44,11 @@ public class LoginController {
         User user = userService.login(phone, password);
 
         if (user != null) {
-            // 登录成功
-            Map<String, Object> data = new HashMap<>();
+            // 登录成功，生成唯一Token
+            String token = userService.generateUniqueToken(user, null);
 
-            // 生成Token
-            String token = UUID.randomUUID().toString().replace("-", "");
+            // 准备返回数据
+            Map<String, Object> data = new HashMap<>();
             data.put("token", token);
 
             // 用户信息
@@ -65,6 +63,26 @@ public class LoginController {
             return Result.success("登录成功", data);
         } else {
             return Result.error("手机号或密码错误");
+        }
+    }
+
+    /**
+     * 登出接口
+     * POST /api/logout
+     */
+    @PostMapping("/logout")
+    public Result<String> logout(@RequestHeader("Authorization") String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return Result.error("缺少认证Token");
+        }
+
+        String token = authorization.substring(7);
+        try {
+            Long userId = userService.getUserIdFromToken(token);
+            userService.logout(userId, token);
+            return Result.success("登出成功");
+        } catch (Exception e) {
+            return Result.error("登出失败");
         }
     }
 
