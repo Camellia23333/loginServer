@@ -5,6 +5,14 @@ package com.example.logintest.entity;
  */
 public class Result<T> {
 
+    // 状态码常量
+    public static final int SUCCESS = 200;
+    public static final int BAD_REQUEST = 400;
+    public static final int UNAUTHORIZED = 401;
+    public static final int FORBIDDEN = 403;
+    public static final int SESSION_CONFLICT = 409;
+    public static final int SERVER_ERROR = 500;
+
     private Integer code;
     private String message;
     private T data;
@@ -20,16 +28,21 @@ public class Result<T> {
 
     // 成功
     public static <T> Result<T> success(String message, T data) {
-        return new Result<>(200, message, data);
+        return new Result<>(SUCCESS, message, data);
     }
 
     public static <T> Result<T> success(String message) {
-        return new Result<>(200, message, null);
+        return new Result<>(SUCCESS, message, null);
     }
 
     // 失败
     public static <T> Result<T> error(String message) {
-        return new Result<>(400, message, null);
+        return new Result<>(BAD_REQUEST, message, null);
+    }
+
+    // 重载error方法，支持自定义状态码
+    public static <T> Result<T> error(int code, String message) {
+        return new Result<>(code, message, null);
     }
 
     // Getter 和 Setter

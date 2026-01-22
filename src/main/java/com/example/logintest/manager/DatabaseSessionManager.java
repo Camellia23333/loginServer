@@ -48,9 +48,26 @@ public class DatabaseSessionManager {
 
         // 验证数据库中的token是否与传入token一致
         UserSession currentSession = userSessionMapper.findByToken(token);
-        return currentSession != null && 
-               currentSession.getUserId().equals(userId) && 
-               currentSession.getStatus() == 1;
+        if (currentSession == null) {
+            return false; // Token不存在于数据库中
+        }
+
+        // 检查用户ID是否匹配
+        if (!currentSession.getUserId().equals(userId)) {
+            return false;
+        }
+
+        // 检查会话状态
+        if (currentSession.getStatus() != 1) {
+            return false; // 会话已被标记为失效
+        }
+
+        // 检查是否过期（双重保险）
+        if (currentSession.getExpiresAt().before(new java.util.Date())) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
