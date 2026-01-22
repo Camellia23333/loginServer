@@ -10,6 +10,7 @@ public class User {
     private Integer id;
     private String phone;
     private String password;
+    private String token; // 新增token字段
     private String username;
     private Date createTime;
     private Date updateTime;
@@ -18,11 +19,12 @@ public class User {
     public User() {
     }
 
-    // 有参构造
+    // 有参构造（补充token）
     public User(String phone, String password, String username) {
         this.phone = phone;
         this.password = password;
         this.username = username;
+        this.token = token;
     }
 
     // Getter 和 Setter
@@ -56,6 +58,15 @@ public class User {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    // Getter 和 Setter（新增token的get/set）
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 
     public Date getCreateTime() {

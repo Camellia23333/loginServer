@@ -17,7 +17,7 @@ public class UserService {
     private UserMapper userMapper;
 
     @Autowired
-    private DatabaseSessionManager sessionManager;
+    private DatabaseSessionManager sessionManager; //替换原来的UserSessionManager
 
     @Autowired
     private JwtUtil jwtUtil;
