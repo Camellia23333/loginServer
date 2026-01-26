@@ -31,8 +31,11 @@ public class AuthInterceptor implements HandlerInterceptor {
         String requestURI = request.getRequestURI();
         System.out.println("========== 拦截器处理请求: " + requestURI + " ==========");
 
-        // 定义不需要验证的路径
-        if ("/api/login".equals(requestURI) || "/api/test".equals(requestURI)) {
+        // 定义不需要验证的路径,加上新的白名单路径
+        if ("/api/login".equals(requestURI) ||
+                "/api/test".equals(requestURI) ||
+                "/api/send-code".equals(requestURI) ||
+                "/api/register".equals(requestURI)) {
             System.out.println("白名单路径,放行");
             return true;
         }

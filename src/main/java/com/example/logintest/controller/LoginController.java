@@ -6,10 +6,12 @@ import com.example.logintest.entity.User;
 import com.example.logintest.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 登录控制器
@@ -20,6 +22,10 @@ public class LoginController {
 
     @Autowired
     private UserService userService;
+
+    // 注入 Redis 工具类,Spring Boot 自动配置好的
+    @Autowired
+    private StringRedisTemplate redisTemplate;
 
     /**
      * 登录接口
@@ -104,4 +110,52 @@ public class LoginController {
         String userAgent = request.getHeader("User-Agent");
         return userAgent != null ? userAgent.substring(0, Math.min(userAgent.length(), 200)) : "Unknown";
     }
+
+    /**
+     * 发送短信验证码接口
+     * POST /api/send-code
+     */
+    @PostMapping("/send-code")
+    public Result<String> sendCode(@RequestBody Map<String, String> params) {
+        String phone = params.get("phone");
+
+        if (phone == null || phone.isEmpty()) {
+            return Result.error("手机号不能为空");
+        }
+
+        // 1. 【防刷校验】Redis 原子性检查：60秒内不允许重复发送
+        // key: "sms:limit:13800138000"
+        String limitKey = "sms:limit:" + phone;
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(limitKey))) {
+            return Result.error("发送太频繁，请稍后再试");
+        }
+
+        // 2. 生成 4 位随机验证码
+        String code = String.valueOf((int)((Math.random() * 9 + 1) * 1000));
+
+        // 3. 【核心】存入 Redis，设置 5 分钟过期
+        // key: "sms:code:13800138000" -> value: "8899"
+        String codeKey = "sms:code:" + phone;
+        redisTemplate.opsForValue().set(codeKey, code, 5, TimeUnit.MINUTES);
+
+        // 4. 设置防刷限制，60秒过期
+        redisTemplate.opsForValue().set(limitKey, "1", 60, TimeUnit.SECONDS);
+
+        // 5. 模拟发送短信,在控制台打印,
+        System.out.println("========================================");
+        System.out.println("[模拟短信] 发送给 " + phone + " 的验证码是: " + code);
+        System.out.println("========================================");
+
+        return Result.success("验证码发送成功");
+    }
+
+    @PostMapping("/register") // 💡 注意：这里必须是 PostMapping
+    public Result<String> register(@RequestBody Map<String, String> params) {
+        // 你的注册逻辑...
+        String phone = params.get("phone");
+        String password = params.get("password");
+        String code = params.get("code");
+        return userService.register(phone, password, code);
+    }
+
 }

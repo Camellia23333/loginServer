@@ -10,6 +10,14 @@ spring:
     username: root
     password: 123456
 
+  # Redis配置
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 0
+      # password:  没设密码
+
 # MyBatis配置
 mybatis:
   type-aliases-package: com.login.entity

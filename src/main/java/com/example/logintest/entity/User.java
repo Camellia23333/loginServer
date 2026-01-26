@@ -24,7 +24,7 @@ public class User {
         this.phone = phone;
         this.password = password;
         this.username = username;
-        this.token = token;
+        //this.token = token;
     }
 
     // Getter 和 Setter
