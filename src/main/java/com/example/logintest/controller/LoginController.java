@@ -123,25 +123,25 @@ public class LoginController {
             return Result.error("手机号不能为空");
         }
 
-        // 1. 【防刷校验】Redis 原子性检查：60秒内不允许重复发送
+        //Redis 原子性检查：60秒内不允许重复发送
         // key: "sms:limit:13800138000"
         String limitKey = "sms:limit:" + phone;
         if (Boolean.TRUE.equals(redisTemplate.hasKey(limitKey))) {
             return Result.error("发送太频繁，请稍后再试");
         }
 
-        // 2. 生成 4 位随机验证码
+        //生成 4 位随机验证码
         String code = String.valueOf((int)((Math.random() * 9 + 1) * 1000));
 
-        // 3. 【核心】存入 Redis，设置 5 分钟过期
+        // 存入 Redis，设置 5 分钟过期
         // key: "sms:code:13800138000" -> value: "8899"
         String codeKey = "sms:code:" + phone;
         redisTemplate.opsForValue().set(codeKey, code, 5, TimeUnit.MINUTES);
 
-        // 4. 设置防刷限制，60秒过期
+        //设置防刷限制，60秒过期
         redisTemplate.opsForValue().set(limitKey, "1", 60, TimeUnit.SECONDS);
 
-        // 5. 模拟发送短信,在控制台打印,
+        //模拟发送短信,在控制台打印,
         System.out.println("========================================");
         System.out.println("[模拟短信] 发送给 " + phone + " 的验证码是: " + code);
         System.out.println("========================================");
