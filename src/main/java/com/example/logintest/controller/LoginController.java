@@ -119,10 +119,30 @@ public class LoginController {
     public Result<String> sendCode(@RequestBody Map<String, String> params) {
         String phone = params.get("phone");
 
-        if (phone == null || phone.isEmpty()) {
-            return Result.error("手机号不能为空");
+        //新增两个参数
+        String captchaCode = params.get("captchaCode"); // 用户输入的验证码 (比如 A8B2)
+        String captchaUuid = params.get("captchaUuid"); // 图片的身份证 ID
+
+        if (phone == null || phone.isEmpty()) return Result.error("手机号不能为空");
+        if (captchaCode == null || captchaCode.isEmpty()) return Result.error("请输入图形验证码");
+        if (captchaUuid == null || captchaUuid.isEmpty()) return Result.error("验证码已失效，请刷新");
+
+        // =================图形验证码校验 =================
+        String redisKey = "captcha:verify:" + captchaUuid;
+        String realCode = redisTemplate.opsForValue().get(redisKey);
+
+        if (realCode == null) {
+            return Result.error("验证码已过期，请点击图片刷新");
+        }
+        // 忽略大小写比对 (用户输入 a8b2 也能过)
+        if (!realCode.equalsIgnoreCase(captchaCode)) {
+            return Result.error("图形验证码错误");
         }
 
+        // 校验通过后，立刻删除该验证码 (防止同一个验证码被复用刷接口)
+        redisTemplate.delete(redisKey);
+
+        // ================= 短信频率限制 =================
         //Redis 原子性检查：60秒内不允许重复发送
         // key: "sms:limit:13800138000"
         String limitKey = "sms:limit:" + phone;
@@ -149,9 +169,9 @@ public class LoginController {
         return Result.success("验证码发送成功");
     }
 
-    @PostMapping("/register") // 💡 注意：这里必须是 PostMapping
+    @PostMapping("/register") //注意：这里必须是 PostMapping
     public Result<String> register(@RequestBody Map<String, String> params) {
-        // 你的注册逻辑...
+        //注册逻辑
         String phone = params.get("phone");
         String password = params.get("password");
         String code = params.get("code");

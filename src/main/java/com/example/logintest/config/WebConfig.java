@@ -20,8 +20,8 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/api/**")
-                //在这里加上 /api/send-code 和 /api/register
-                .excludePathPatterns("/api/login", "/api/test", "/api/health", "/api/send-code", "/api/register");
+                //这些接口加入白名单，就不需要登录就能访问
+                .excludePathPatterns("/api/login", "/api/test", "/api/health", "/api/send-code", "/api/register", "/api/captcha");
     }
 
     @Override
