@@ -2,6 +2,7 @@ package com.example.logintest.controller;
 
 import cn.hutool.captcha.CaptchaUtil;
 import cn.hutool.captcha.LineCaptcha;
+import com.example.logintest.annotation.RateLimit;
 import com.example.logintest.entity.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -24,10 +25,12 @@ public class CaptchaController {
     /**
      * 获取图形验证码
      */
+/*    //新增限流，每分钟最多获取 40 次验证码
+    @RateLimit(time = 60, count = 40)*/
     @GetMapping("/captcha")
     public Result<Map<String, String>> getCaptcha() {
-        //生成验证码图片,宽120, 高40, 4个字符, 干扰线10条
-        LineCaptcha lineCaptcha = CaptchaUtil.createLineCaptcha(120, 40, 4, 10);
+        //生成验证码图片,宽150, 高60, 4个字符, 干扰线10条
+        LineCaptcha lineCaptcha = CaptchaUtil.createLineCaptcha(150, 60, 4, 10);
 
         //获取验证码里的文字,用于存 Redis
         String code = lineCaptcha.getCode();

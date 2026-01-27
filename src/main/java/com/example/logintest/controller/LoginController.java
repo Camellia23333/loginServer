@@ -1,5 +1,6 @@
 package com.example.logintest.controller;
 
+import com.example.logintest.annotation.RateLimit;
 import com.example.logintest.entity.LoginRequest;
 import com.example.logintest.entity.Result;
 import com.example.logintest.entity.User;
@@ -115,6 +116,8 @@ public class LoginController {
      * 发送短信验证码接口
      * POST /api/send-code
      */
+    // 每个手机号，60秒内只能发 1 次
+    @RateLimit(key = "#params['phone']", time = 60, count = 1)
     @PostMapping("/send-code")
     public Result<String> sendCode(@RequestBody Map<String, String> params) {
         String phone = params.get("phone");
