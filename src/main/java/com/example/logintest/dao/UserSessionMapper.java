@@ -2,7 +2,6 @@ package com.example.logintest.dao;
 
 import com.example.logintest.entity.UserSession;
 import org.apache.ibatis.annotations.*;
-import java.util.List;
 
 @Mapper
 public interface UserSessionMapper {

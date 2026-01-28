@@ -115,9 +115,11 @@ public class LoginController {
     /**
      * 发送短信验证码接口
      * POST /api/send-code
+     * 锁1 (AOP): IP 限流
+     * 锁2 (业务代码): 手机号限流
      */
-    // 每个手机号，60秒内只能发 1 次
-    @RateLimit(key = "#params['phone']", time = 60, count = 1)
+    //锁1限制：同一个 IP，60秒内只能请求 5 次 ，防止一直换号刷钱
+    @RateLimit(time = 60, count = 5)
     @PostMapping("/send-code")
     public Result<String> sendCode(@RequestBody Map<String, String> params) {
         String phone = params.get("phone");
@@ -147,7 +149,7 @@ public class LoginController {
 
         // ================= 短信频率限制 =================
         //Redis 原子性检查：60秒内不允许重复发送
-        // key: "sms:limit:13800138000"
+        //锁2限制: 手机号限流，同一个手机号，60秒内只能发 1 条，防止骚扰用户
         String limitKey = "sms:limit:" + phone;
         if (Boolean.TRUE.equals(redisTemplate.hasKey(limitKey))) {
             return Result.error("发送太频繁，请稍后再试");
@@ -161,7 +163,7 @@ public class LoginController {
         String codeKey = "sms:code:" + phone;
         redisTemplate.opsForValue().set(codeKey, code, 5, TimeUnit.MINUTES);
 
-        //设置防刷限制，60秒过期
+        //防刷限制，设置手机号限流的 Key，有效期 60 秒
         redisTemplate.opsForValue().set(limitKey, "1", 60, TimeUnit.SECONDS);
 
         //模拟发送短信,在控制台打印,
