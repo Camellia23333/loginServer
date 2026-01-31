@@ -25,8 +25,9 @@ public class OrderService {
     @Autowired
     private OrdersMapper ordersMapper;
 
-    @Autowired
-    private StringRedisTemplate redisTemplate; // 记得在 Service 头部注入
+    //修改，将Redis移除，
+/*    @Autowired
+    private StringRedisTemplate redisTemplate; */
 
     /**
      * 创建订单,抢购核心逻辑
@@ -74,14 +75,8 @@ public class OrderService {
 
             ordersMapper.insert(order);
 
-            //埋入 Redis 过期 Key
-            //Key: order:expire:2026xxxxxx
-            //Value: ""
-            //Time: 60秒 ，为了测试方便，先设短一点，实际应设设 15分钟
-            redisTemplate.opsForValue().set("order:expire:" + orderNo, "", 60, TimeUnit.SECONDS);
-
-
-            //返回创建好的订单对象 ，前端需要 orderNo 去发起支付
+            //redisTemplate.opsForValue().set("order:expire:" + orderNo, "", 60, TimeUnit.SECONDS);
+            //只返回数据，不操作Redis，Redis 由 Controller 负责
             return Result.success("抢购成功，请尽快支付", order);
 
         } catch (Exception e) {
@@ -121,7 +116,9 @@ public class OrderService {
 
     /**
      * 模拟支付成功
+     * 加上 @Transactional，因为涉及两张表的更新
      */
+    @Transactional(rollbackFor = Exception.class)
     public Result<String> payOrder(String orderNo) {
         //查询订单
         Orders order = ordersMapper.findByOrderNo(orderNo);
@@ -169,8 +166,9 @@ public class OrderService {
         if (rows > 0) {
             //立即恢复库存
             productMapper.recoverStock(order.getProductId(), order.getCount());
+
             //顺便把 Redis 里的过期 key 删了
-            redisTemplate.delete("order:expire:" + orderNo);
+            //redisTemplate.delete("order:expire:" + orderNo);
 
             return Result.success("订单已取消");
         }
