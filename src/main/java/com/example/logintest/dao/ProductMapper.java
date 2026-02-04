@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.util.List;
 @Mapper
 public interface ProductMapper {
 
@@ -14,6 +15,13 @@ public interface ProductMapper {
      */
     @Select("SELECT * FROM product WHERE id = #{id}")
     Product findById(Long id);
+
+    /**
+     * 新增:查询所有商品列表
+     */
+    // 在真实企业开发中，这里通常会配合分页插件 (PageHelper)，暂时我们先查全部
+    @Select("SELECT * FROM product ORDER BY create_time DESC")
+    List<Product> findAll();
 
     /**
      *扣减可下单库存

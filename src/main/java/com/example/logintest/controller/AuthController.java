@@ -1,8 +1,7 @@
 package com.example.logintest.controller;
 
-import com.example.logintest.dao.UserSessionMapper;
+import com.example.logintest.dao.UserMapper;
 import com.example.logintest.entity.Result;
-import com.example.logintest.entity.UserSession;
 import com.example.logintest.service.UserService;
 import com.example.logintest.utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +20,7 @@ public class AuthController {
     private JwtUtil jwtUtil;
 
     @Autowired
-    private UserSessionMapper userSessionMapper;
+    private UserMapper userMapper;
 
     /**
      * 主动校验Token有效性
@@ -36,35 +35,26 @@ public class AuthController {
         String token = authorization.substring(7);
 
         try {
-            // 1. 校验JWT有效性
+            //校验JWT有效性,纯算法校验，不查库,如果 JWT 本身过期了，直接返回 401，不需要查数据库了
             if (!jwtUtil.validateToken(token) || jwtUtil.isTokenExpired(token)) {
                 return Result.error(401, "Token已过期");
             }
 
-            // 2. 从JWT中提取用户ID
+            //从JWT中提取用户ID
             Long userId = jwtUtil.getUserIdFromToken(token);
 
-            // 3. 检查会话状态（使用 user_sessions 表）
-            UserSession session = userSessionMapper.findByToken(token);
+            //查 user 表,查询数据库中该用户当前的 Token
+            String dbToken = userMapper.findTokenByUserId(userId);
 
-            if (session == null) {
+            //各种状态判断
+            if (dbToken == null) {
                 // Token在数据库中不存在，可能已被删除
                 return Result.error(401, "Token无效");
             }
 
-            if (!session.getUserId().equals(userId)) {
-                // 用户ID不匹配
-                return Result.error(401, "Token无效");
-            }
+            if (!dbToken.equals(token)) {
 
-            if (session.getStatus() != 1) {
-                // 会话已失效（被其他设备登录替换）
                 return Result.error(409, "已在其他设备登录");
-            }
-
-            if (session.getExpiresAt().before(new java.util.Date())) {
-                // 会话已过期
-                return Result.error(401, "Token已过期");
             }
 
             // 4. 刷新最后活跃时间

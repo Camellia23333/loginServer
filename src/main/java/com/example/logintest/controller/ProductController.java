@@ -9,12 +9,22 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 @RestController
 @RequestMapping("/api/product")
 public class ProductController {
 
     @Autowired
     private ProductMapper productMapper;
+
+    /**
+     * 新增: 获取商品列表接口
+     */
+    @GetMapping("/list")
+    public Result<List<Product>> getProductList() {
+        List<Product> list = productMapper.findAll();
+        return Result.success("获取成功", list);
+    }
 
     /**
      * 获取商品详情,前端展示最新库存
