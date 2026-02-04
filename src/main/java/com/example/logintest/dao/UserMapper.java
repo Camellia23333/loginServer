@@ -17,7 +17,7 @@ public interface UserMapper {
     User findByPhoneAndPassword(@Param("phone") String phone,
                                 @Param("password") String password);
 
-    // 新增：更新用户Token
+    // 新增：登录成功：更新用户的 Token 和 更新时间
     @Update("UPDATE user SET token = #{token}, update_time = CURRENT_TIMESTAMP WHERE id = #{userId}")
     int updateUserToken(@Param("userId") Long userId, @Param("token") String token);
 
@@ -25,6 +25,14 @@ public interface UserMapper {
     @Select("SELECT id, phone, password, username, token, create_time, update_time " +
             "FROM user WHERE token = #{token} AND token IS NOT NULL")
     User findByToken(@Param("token") String token);
+
+    //根据 ID 查询用户当前的 Token (用于校验)*
+    @Select("SELECT token FROM user WHERE id = #{userId}")
+    String findTokenByUserId(@Param("userId") Long userId);
+
+    // 【可选】如果你需要根据ID查整个用户
+    @Select("SELECT * FROM user WHERE id = #{userId}")
+    User findById(@Param("userId") Long userId);
 
     //新增：注册，插入新用户信息
     @Insert("INSERT INTO user(phone, password, username, create_time, update_time) " +

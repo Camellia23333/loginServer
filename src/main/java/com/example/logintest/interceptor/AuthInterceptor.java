@@ -1,8 +1,7 @@
 package com.example.logintest.interceptor;
 
-import com.example.logintest.dao.UserSessionMapper;
+import com.example.logintest.dao.UserMapper;
 import com.example.logintest.entity.Result;
-import com.example.logintest.entity.UserSession;
 import com.example.logintest.service.UserService;
 import com.example.logintest.utils.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,8 +22,9 @@ public class AuthInterceptor implements HandlerInterceptor {
     @Autowired
     private JwtUtil jwtUtil;
 
+    // 注入 UserMapper 用于查询最新的 Token 进行比对
     @Autowired
-    private UserSessionMapper userSessionMapper;
+    private UserMapper userMapper;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -61,39 +61,31 @@ public class AuthInterceptor implements HandlerInterceptor {
             System.out.println("Token验证结果: " + isValid);
 
             if (isValid) {
-                // 刷新Token过期时间
-                userService.refreshToken(userId, token);
-                System.out.println("✓ Token验证通过,请求放行");
                 return true;
             } else {
-                // 检查是哪种情况导致验证失败
-                UserSession session = userSessionMapper.findByToken(token);
+                //验证失败，进行详细的错误原因区分
+                if (jwtUtil.isTokenExpired(token)) {
+                    sendErrorResponse(response, Result.error("Token已过期，请重新登录"), 401);
+                    return false;
+                }
+                // 查库比对
+                String dbToken = userMapper.findTokenByUserId(userId);
 
-                if (session == null) {
-                    System.out.println("   Token在数据库中不存在");
-                    sendErrorResponse(response, Result.error("Token不存在"), 401);
-                } else if (session.getStatus() == 0) {
-                    System.out.println("   Token已被其他设备登录替换");
-                    System.out.println("   会话状态: " + session.getStatus());
-                    System.out.println("   登录时间: " + session.getLoginTime());
-                    sendErrorResponse(response, Result.error("已在其他设备登录"), 409);
-                } else if (session.getExpiresAt().before(new java.util.Date())) {
-                    System.out.println("   Token已过期");
-                    System.out.println("   过期时间: " + session.getExpiresAt());
-                    System.out.println("   当前时间: " + new java.util.Date());
-                    sendErrorResponse(response, Result.error("Token已过期"), 401);
+                if (dbToken == null) {
+                    // 数据库里没Token，说明被强制登出了
+                    sendErrorResponse(response, Result.error("Token失效，请重新登录"), 401);
+                } else if (!dbToken.equals(token)) {
+                    // 数据库Token变了，说明被踢了
+                    sendErrorResponse(response, Result.error("账号已在其他设备登录"), 409);
                 } else {
-                    System.out.println("   其他验证失败情况");
-                    System.out.println("   会话状态: " + session.getStatus());
-                    System.out.println("   用户ID匹配: " + session.getUserId().equals(userId));
-                    sendErrorResponse(response, Result.error("Token无效"), 401);
+                    // 其他未知情况
+                    sendErrorResponse(response, Result.error("认证失败"), 401);
                 }
                 return false;
             }
         } catch (Exception e) {
-            System.err.println("Token解析失败: " + e.getMessage());
             e.printStackTrace();
-            sendErrorResponse(response, Result.error("Token解析失败: " + e.getMessage()), 401);
+            sendErrorResponse(response, Result.error("Token解析失败"), 401);
             return false;
         }
     }
