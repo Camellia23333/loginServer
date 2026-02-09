@@ -16,6 +16,9 @@ public class WebConfig implements WebMvcConfigurer {
     @Autowired
     private AuthInterceptor authInterceptor;
 
+    /**
+     * 添加拦截器
+     */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
@@ -24,13 +27,16 @@ public class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns("/api/login", "/api/test", "/api/health", "/api/send-code", "/api/register", "/api/captcha");
     }
 
+    /**
+     * 跨域配置
+     */
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOriginPatterns("*")  //可以修改真机的ip地址
+        registry.addMapping("/**") //允许所有接口
+                .allowedOriginPatterns("*")  //允许所有来源，可以修改真机的ip地址
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
-                .allowCredentials(false)
+                .allowCredentials(false) //允许带 Cookie/Token
                 .maxAge(3600);
     }
 }

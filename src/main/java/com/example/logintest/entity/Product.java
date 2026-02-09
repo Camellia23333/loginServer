@@ -3,6 +3,7 @@ package com.example.logintest.entity;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 public class Product implements Serializable {
 
@@ -13,7 +14,10 @@ public class Product implements Serializable {
     private BigDecimal price;
     private Integer totalStock;
     private Integer availableStock;
+    // 告诉 Jackson：输出和输入都用这个格式，并且使用东八区时间(北京时间)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date createTime;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date updateTime;
 
     public Product() {

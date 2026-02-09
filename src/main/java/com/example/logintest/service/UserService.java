@@ -1,5 +1,8 @@
 package com.example.logintest.service;
 
+import com.example.logintest.dao.SysLoginLogMapper;
+import com.example.logintest.dao.SysMenuMapper;
+import com.example.logintest.dao.SysRoleMapper;
 import com.example.logintest.dao.UserMapper;
 import com.example.logintest.entity.Result;
 import com.example.logintest.entity.User;
@@ -18,6 +21,14 @@ public class UserService {
     @Autowired
     private UserMapper userMapper;
 
+    //新增注入
+    @Autowired
+    private SysRoleMapper roleMapper;
+    @Autowired
+    private SysMenuMapper menuMapper;
+    @Autowired
+    private SysLoginLogMapper loginLogMapper;
+
     @Autowired
     private DatabaseSessionManager sessionManager; //替换原来的UserSessionManager
 
@@ -29,9 +40,12 @@ public class UserService {
     private StringRedisTemplate redisTemplate;
 
     /**
-     * 用户登录验证
+     * 用户登录验证，增加日志记录
+     * @param phone 手机号
+     * @param password 密码
+     * @param ipAddr 客户端IP ，需要从Controller传进来
      */
-    public User login(String phone, String password) {
+    public User login(String phone, String password, String ipAddr) {
         if (phone == null || phone.trim().isEmpty()) {
             System.out.println("登录失败：手机号为空");
             return null;
@@ -47,6 +61,14 @@ public class UserService {
 
         if (user != null) {
             System.out.println("登录成功 - 用户: " + user.getUsername());
+            //新增记录登录日志
+            // 这是一个“副作用”操作，一定要捕获异常，不能因为日志记失败了，就告诉用户登录失败
+            try {
+                recordLoginLog(user.getId().longValue(), ipAddr);
+            } catch (Exception e) {
+                System.err.println("记录登录日志失败: " + e.getMessage());
+                // 实际生产中这里会打印 error 日志，但不会抛出异常打断登录流程
+            }
         } else {
             System.out.println("登录失败 - 手机号或密码错误");
         }
@@ -131,5 +153,44 @@ public class UserService {
         redisTemplate.delete(codeKey);
 
         return Result.success("注册成功");
+    }
+    /**
+     *记录登录日志
+     */
+    private void recordLoginLog(Long userId, String ipAddr) {
+        com.example.logintest.entity.SysLoginLog log = new com.example.logintest.entity.SysLoginLog();
+        log.setUserId(userId);
+        log.setIpAddr(ipAddr);
+        log.setLoginTime(new java.util.Date());
+
+        loginLogMapper.insert(log);
+        System.out.println(">> 已记录登录日志，IP: " + ipAddr);
+    }
+
+    /**
+     * 获取用户的角色集合 (例如: ["admin", "operation"])
+     */
+    public java.util.Set<String> getUserRoleKeys(Long userId) {
+        // 如果是超级管理员(假设ID为1的用户)，通常拥有所有权限，
+        // 但为了演示标准流程，我们还是老老实实查库
+        java.util.Set<String> roles = roleMapper.findRoleKeysByUserId(userId);
+        return roles;
+    }
+
+    /**
+     * 获取用户的权限集合 (例如: ["product:add", "user:list"])
+     */
+    public java.util.Set<String> getUserPermissions(Long userId) {
+        java.util.Set<String> perms = menuMapper.findPermsByUserId(userId);
+        // 这里可以加一个逻辑：如果角色里包含 "admin"，则添加 "*:*:*" (所有权限)
+        // 为了演示 RBAC 细节，我们暂时只返回数据库查到的
+        return perms;
+    }
+
+    /**
+     * 获取用户的菜单列表 (用于前端生成左侧边栏)
+     */
+    public java.util.List<com.example.logintest.entity.SysMenu> getUserMenuList(Long userId) {
+        return menuMapper.findMenusByUserId(userId);
     }
 }

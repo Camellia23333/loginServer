@@ -35,7 +35,8 @@ public class AuthInterceptor implements HandlerInterceptor {
         if ("/api/login".equals(requestURI) ||
                 "/api/test".equals(requestURI) ||
                 "/api/send-code".equals(requestURI) ||
-                "/api/register".equals(requestURI)) {
+                "/api/register".equals(requestURI)
+        ) {
             System.out.println("白名单路径,放行");
             return true;
         }
@@ -61,6 +62,8 @@ public class AuthInterceptor implements HandlerInterceptor {
             System.out.println("Token验证结果: " + isValid);
 
             if (isValid) {
+                //新增，将 userId 存入 request 域，后续的 Controller 或 AOP 切面可以直接取用，不用再解析 Token,把 userId 存进去，这样后面的 AOP 切面才能知道是谁！
+                request.setAttribute("currentUser", userId);
                 return true;
             } else {
                 //验证失败，进行详细的错误原因区分

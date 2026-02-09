@@ -40,6 +40,7 @@ public class LoginController {
         String phone = request.getPhone();
         String password = request.getPassword();
         String deviceInfo = getDeviceInfo(httpRequest); // 获取设备信息
+        String ipAddr = getClientIpAddress(httpRequest);// 获取客户端真实IP
 
         // 参数校验
         if (phone == null || phone.trim().isEmpty()) {
@@ -49,14 +50,14 @@ public class LoginController {
             return Result.error("密码不能为空");
         }
 
-        // 登录验证
-        User user = userService.login(phone, password);
+        // 登录验证，新增传入 IP 用于记录日志
+        User user = userService.login(phone, password, ipAddr);
 
         if (user != null) {
             // 登录成功，生成唯一Token
             String token = userService.generateUniqueToken(user, deviceInfo);
 
-            // 准备返回数据
+            // 准备返回数据，开始组装返回给前端
             Map<String, Object> data = new HashMap<>();
             data.put("token", token);
 
@@ -67,6 +68,20 @@ public class LoginController {
             userInfo.put("phone", user.getPhone());
             data.put("userInfo", userInfo);
 
+            // 新增核心：获取权限信息
+            // 既然登录了，就顺便告诉前端这个人的身份，省得前端再发请求问
+            // 在超大型系统中，通常会把这个拆分为独立的 /api/user/info 接口，方便页面刷新时单独获取
+
+            // 获取角色集合 (Set去重) -> ["admin"]
+            data.put("roles", userService.getUserRoleKeys(Long.valueOf(user.getId())));//修改将user.getId()的返回值从Integer转换为Long类型
+
+            // 获取按钮权限集合 -> ["product:add", "user:delete"]
+            data.put("permissions", userService.getUserPermissions(Long.valueOf(user.getId())));
+
+            // 获取菜单列表 ，用于渲染左侧边栏
+            data.put("menus", userService.getUserMenuList(Long.valueOf(user.getId())));
+
+
             System.out.println("登录成功！返回Token: " + token);
 
             return Result.success("登录成功", data);
@@ -74,6 +89,7 @@ public class LoginController {
             return Result.error("手机号或密码错误");
         }
     }
+
 
     /**
      * 登出接口
@@ -110,6 +126,35 @@ public class LoginController {
     private String getDeviceInfo(HttpServletRequest request) {
         String userAgent = request.getHeader("User-Agent");
         return userAgent != null ? userAgent.substring(0, Math.min(userAgent.length(), 200)) : "Unknown";
+    }
+
+    /**
+     * 获取客户端真实IP地址
+     */
+    private String getClientIpAddress(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+
+        // 如果有多个IP地址，取第一个（处理代理链的情况）
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+
+        return ip;
     }
 
     /**
@@ -174,7 +219,7 @@ public class LoginController {
         return Result.success("验证码发送成功");
     }
 
-    @PostMapping("/register") //注意：这里必须是 PostMapping
+    @PostMapping("/register")
     public Result<String> register(@RequestBody Map<String, String> params) {
         //注册逻辑
         String phone = params.get("phone");
